@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Accelerometer Data</title>
+    <title>Accelerometer Data 4</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -32,18 +32,13 @@
     </div>
 
     <script>
-        function requestAccelerometerPermission() {
-          if (typeof DeviceMotionEvent.requestPermission === 'function') {
-            DeviceMotionEvent.requestPermission()
-              .then(permissionState => {
-                if (permissionState === 'granted') {
-                  startAccelerometerListener();
-                }
-              })
-              .catch(console.error);
-          } else {
-            startAccelerometerListener();
-          }
+        function getAccel() {
+          DeviceMotionEvent.requestPermission().then(response => {
+            if (response == 'granted') {
+              console.log("Accelerometer permission granted");
+              startAccelerometerListener();
+            }
+          });
         }
 
         function startAccelerometerListener() {
@@ -60,8 +55,8 @@
           }
         }
 
-        // Request permission and start listening to accelerometer data
-        requestAccelerometerPermission();
+        // Call the function to request accelerometer permission and start listening to accelerometer data
+        getAccel();
     </script>
 </body>
 </html>
