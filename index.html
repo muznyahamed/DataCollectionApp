@@ -39,6 +39,10 @@
       <h1 class="text-center">Patient Data Collection App</h1>
       <div class="section">
         <h2>Voice Recording</h2>
+        <p>
+          Click the "Start" button to begin voice recording. Speak clearly into
+          your device's microphone. Click the "Stop" button to finish recording.
+        </p>
         <div class="text-center">
           <button type="button" class="btn btn-primary" id="startRecording">
             Start
@@ -65,6 +69,11 @@
       </div>
       <div class="section">
         <h2>Handwriting Spiral</h2>
+        <p>
+          Use your finger or a stylus on the canvas to draw a spiral. Click the
+          "Clear" button to erase the drawing. Click the "Download" button to
+          save the drawing as an image.
+        </p>
         <div class="text-center">
           <canvas id="handwritingCanvas" width="500" height="500"></canvas>
           <button type="button" class="btn btn-primary mt-2" id="clearCanvas">
@@ -81,6 +90,13 @@
       </div>
       <div class="section">
         <h2>Accelerometer Data</h2>
+        <p>
+          Click the "Start Accelerometer Data Recording" button to begin
+          recording accelerometer data. The recorded data will be displayed
+          below. Click the "Stop Accelerometer Data Recording" button to finish
+          recording. Click the "Download Accelerometer Data CSV" button to save
+          the data as a CSV file.
+        </p>
         <div id="accelerometerData" class="text-center"></div>
         <button
           type="button"
@@ -249,6 +265,7 @@
           window.addEventListener("devicemotion", handleMotion, true);
         }
       }
+
       function handleMotion(e) {
         if (isAccDataRecording) {
           const acceleration = e.accelerationIncludingGravity;
@@ -286,21 +303,6 @@
         link.click();
       }
 
-      window.addEventListener("devicemotion", function (e) {
-        if (isAccDataRecording) {
-          const acceleration = e.accelerationIncludinggravity;
-          const accData = [acceleration.x, acceleration.y, acceleration.z];
-          accDataChunks.push(accData);
-        }
-
-        const acceleration = e.accelerationIncludingGravity;
-        document.getElementById("accelerometerData").innerHTML = `
-        <p>Acceleration X: ${acceleration.x}</p>
-        <p>Acceleration Y: ${acceleration.y}</p>
-        <p>Acceleration Z: ${acceleration.z}</p>
-      `;
-      });
-
       document
         .getElementById("startAccDataRecording")
         .addEventListener("click", startAccDataRecording);
@@ -312,17 +314,33 @@
         .addEventListener("click", downloadAccData);
 
       // Display recording time
-      setInterval(function () {
-        if (recorder && recorder.state === "recording") {
-          const currentTime = new Date();
-          const timeDiff = Math.floor(
-            (currentTime - recorder.startTime) / 1000
-          );
-          document.getElementById(
-            "recordingTime"
-          ).textContent = `Recording Time: ${timeDiff} seconds`;
-        }
-      }, 1000);
+      let recordingInterval;
+
+      function startRecordingTime() {
+        recordingInterval = setInterval(function () {
+          if (recorder && recorder.state === "recording") {
+            const currentTime = new Date();
+            const timeDiff = Math.floor(
+              (currentTime - recorder.startTime) / 1000
+            );
+            document.getElementById(
+              "recordingTime"
+            ).textContent = `Recording Time: ${timeDiff} seconds`;
+          }
+        }, 1000);
+      }
+
+      function stopRecordingTime() {
+        clearInterval(recordingInterval);
+        document.getElementById("recordingTime").textContent = "";
+      }
+
+      document
+        .getElementById("startRecording")
+        .addEventListener("click", startRecordingTime);
+      document
+        .getElementById("stopRecording")
+        .addEventListener("click", stopRecordingTime);
     </script>
   </body>
 </html>
