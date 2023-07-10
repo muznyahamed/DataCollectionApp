@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Accelerometer & Gyroscope Data</title>
+    <title>Accelerometer Data</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -11,51 +11,57 @@
         h1 {
             text-align: center;
         }
-        #accelerometer-data, #gyroscope-data {
+        #accelerometer-data {
             margin-top: 30px;
+        }
+        .sensor-values {
+            display: flex;
+            justify-content: space-between;
         }
     </style>
 </head>
 <body>
-    <h1>Accelerometer & Gyroscope Data</h1>
+    <h1>Accelerometer Data</h1>
     <div id="accelerometer-data">
-        <h2>Accelerometer Data:</h2>
-        <p id="accelerometer-x">X: </p>
-        <p id="accelerometer-y">Y: </p>
-        <p id="accelerometer-z">Z: </p>
-    </div>
-    <div id="gyroscope-data">
-        <h2>Gyroscope Data:</h2>
-        <p id="gyroscope-alpha">Alpha: </p>
-        <p id="gyroscope-beta">Beta: </p>
-        <p id="gyroscope-gamma">Gamma: </p>
+        <h2>Accelerometer Values:</h2>
+        <div class="sensor-values">
+            <p>X: <span id="accelerometer-x"></span></p>
+            <p>Y: <span id="accelerometer-y"></span></p>
+            <p>Z: <span id="accelerometer-z"></span></p>
+        </div>
     </div>
 
     <script>
-        window.addEventListener('devicemotion', handleMotion, true);
-        window.addEventListener('deviceorientation', handleOrientation, true);
+        function requestAccelerometerPermission() {
+          if (typeof DeviceMotionEvent.requestPermission === 'function') {
+            DeviceMotionEvent.requestPermission()
+              .then(permissionState => {
+                if (permissionState === 'granted') {
+                  startAccelerometerListener();
+                }
+              })
+              .catch(console.error);
+          } else {
+            startAccelerometerListener();
+          }
+        }
+
+        function startAccelerometerListener() {
+          window.addEventListener('devicemotion', handleMotion, true);
+        }
 
         function handleMotion(event) {
-            var acceleration = event.accelerationIncludingGravity;
+          var acceleration = event.accelerationIncludingGravity;
 
-            if (acceleration) {
-                document.getElementById('accelerometer-x').textContent = 'X: ' + acceleration.x;
-                document.getElementById('accelerometer-y').textContent = 'Y: ' + acceleration.y;
-                document.getElementById('accelerometer-z').textContent = 'Z: ' + acceleration.z;
-            }
+          if (acceleration) {
+            document.getElementById('accelerometer-x').textContent = acceleration.x.toFixed(2);
+            document.getElementById('accelerometer-y').textContent = acceleration.y.toFixed(2);
+            document.getElementById('accelerometer-z').textContent = acceleration.z.toFixed(2);
+          }
         }
 
-        function handleOrientation(event) {
-            var alpha = event.alpha;
-            var beta = event.beta;
-            var gamma = event.gamma;
-
-            if (alpha !== null && beta !== null && gamma !== null) {
-                document.getElementById('gyroscope-alpha').textContent = 'Alpha: ' + alpha;
-                document.getElementById('gyroscope-beta').textContent = 'Beta: ' + beta;
-                document.getElementById('gyroscope-gamma').textContent = 'Gamma: ' + gamma;
-            }
-        }
+        // Request permission and start listening to accelerometer data
+        requestAccelerometerPermission();
     </script>
 </body>
 </html>
