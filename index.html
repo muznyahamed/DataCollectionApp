@@ -32,25 +32,29 @@
     </div>
 
     <script>
-        window.addEventListener('deviceorientation', handleOrientation, true);
         window.addEventListener('devicemotion', handleMotion, true);
+        window.addEventListener('deviceorientation', handleOrientation, true);
+
+        function handleMotion(event) {
+            var acceleration = event.accelerationIncludingGravity;
+
+            if (acceleration) {
+                document.getElementById('accelerometer-x').textContent = 'X: ' + acceleration.x;
+                document.getElementById('accelerometer-y').textContent = 'Y: ' + acceleration.y;
+                document.getElementById('accelerometer-z').textContent = 'Z: ' + acceleration.z;
+            }
+        }
 
         function handleOrientation(event) {
             var alpha = event.alpha;
             var beta = event.beta;
             var gamma = event.gamma;
 
-            document.getElementById('gyroscope-alpha').textContent = 'Alpha: ' + alpha;
-            document.getElementById('gyroscope-beta').textContent = 'Beta: ' + beta;
-            document.getElementById('gyroscope-gamma').textContent = 'Gamma: ' + gamma;
-        }
-
-        function handleMotion(event) {
-            var acceleration = event.accelerationIncludingGravity;
-
-            document.getElementById('accelerometer-x').textContent = 'X: ' + acceleration.x;
-            document.getElementById('accelerometer-y').textContent = 'Y: ' + acceleration.y;
-            document.getElementById('accelerometer-z').textContent = 'Z: ' + acceleration.z;
+            if (alpha !== null && beta !== null && gamma !== null) {
+                document.getElementById('gyroscope-alpha').textContent = 'Alpha: ' + alpha;
+                document.getElementById('gyroscope-beta').textContent = 'Beta: ' + beta;
+                document.getElementById('gyroscope-gamma').textContent = 'Gamma: ' + gamma;
+            }
         }
     </script>
 </body>
