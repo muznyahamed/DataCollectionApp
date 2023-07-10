@@ -20,6 +20,8 @@
     #handwritingCanvas {
       border: 1px solid #000;
       touch-action: none;
+      width: 80vw; /* Set width to 80% of the viewport width */
+      height: 80vh; /* Set height to 80% of the viewport height */
     }
 
     #waveform {
@@ -37,9 +39,10 @@
       <div class="text-center">
         <button type="button" class="btn btn-primary" id="startRecording">Start</button>
         <button type="button" class="btn btn-danger" id="stopRecording" disabled>Stop</button>
+        <button type="button" class="btn btn-success" id="downloadRecording" disabled>Download</button> <!-- New button for downloading recording -->
       </div>
       <div id="waveform"></div>
-      <div id="timer" class="text-center"></div>
+      <p id="recordingTime"></p> <!-- New paragraph to display recording time -->
     </div>
     <div class="section">
       <h2>Handwriting Spiral</h2>
@@ -59,8 +62,6 @@
   <script>
     // Voice Recording
     let recorder;
-    let countdownInterval;
-    let countdownTime = 30; // 30 seconds
     const visualizerWidth = 300;
     const visualizerHeight = 100;
     const waveform = WaveSurfer.create({
@@ -70,41 +71,11 @@
       height: 100,
       responsive: true
     });
-
-    function updateTimer() {
-      document.getElementById('timer').textContent = `Time Remaining: ${countdownTime} seconds`;
-    }
-
-    function drawVisualizer() {
-      const canvas = document.getElementById('waveform');
-      const ctx = canvas.getContext('2d');
-      const barWidth = Math.ceil(canvas.width / visualizerWidth);
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      for (let i = 0; i < visualizerBars.length; i++) {
-        const x = i * barWidth;
-        const height = (canvas.height * visualizerBars[i]) / visualizerHeight;
-        ctx.fillStyle = 'violet';
-        ctx.fillRect(x, canvas.height - height, barWidth, height);
-      }
-    }
+    let recordingStartTime; // Variable to store the recording start time
 
     function startRecording() {
       document.getElementById('startRecording').disabled = true;
       document.getElementById('stopRecording').disabled = false;
-      countdownTime = 30;
-      updateTimer();
-      countdownInterval = setInterval(function() {
-        countdownTime--;
-        if (countdownTime <= 0) {
-          clearInterval(countdownInterval);
-          document.getElementById('startRecording').disabled = false;
-          document.getElementById('stopRecording').disabled = true;
-          stopRecording();
-          document.getElementById('downloadButton').style.display = 'block';
-          return;
-        }
-        updateTimer();
-      }, 1000);
 
       visualizerBars = [];
       const visualizerInterval = setInterval(function() {
@@ -113,6 +84,10 @@
         drawVisualizer();
         if (visualizerBars.length >= visualizerWidth) {
           clearInterval(visualizerInterval);
+          document.getElementById('startRecording').disabled = false;
+          document.getElementById('stopRecording').disabled = true;
+          stopRecording();
+          document.getElementById('downloadRecording').disabled = false; // Enable the download button
         }
       }, 30);
 
@@ -122,6 +97,9 @@
           const chunks = [];
           recorder.ondataavailable = function(e) {
             chunks.push(e.data);
+          };
+          recorder.onstart = function() {
+            recordingStartTime = new Date(); // Record the start time
           };
           recorder.onstop = function() {
             const blob = new Blob(chunks, { type: 'audio/wav' });
@@ -136,14 +114,87 @@
     }
 
     function stopRecording() {
-      clearInterval(countdownInterval);
       recorder.stop();
     }
 
     document.getElementById('startRecording').addEventListener('click', startRecording);
     document.getElementById('stopRecording').addEventListener('click', stopRecording);
 
-    // Rest of the code remains the same...
+    // Handwriting Spiral
+    const canvas = document.getElementById('handwritingCanvas');
+    const ctx = canvas.getContext('2d');
+    let isDrawing = false;
+
+    function startDrawing(e) {
+      isDrawing = true;
+      ctx.beginPath();
+      ctx.moveTo(getX(e), getY(e));
+    }
+
+    function draw(e) {
+      if (!isDrawing) return;
+      ctx.lineTo(getX(e), getY(e));
+      ctx.stroke();
+    }
+
+    function stopDrawing() {
+      isDrawing = false;
+    }
+
+    function clearCanvas() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    function getX(e) {
+      if (e.type === 'touchmove' || e.type === 'touchend') {
+        return e.touches[0].clientX - canvas.offsetLeft;
+      } else {
+        return e.clientX - canvas.offsetLeft;
+      }
+    }
+
+    function getY(e) {
+      if (e.type === 'touchmove' || e.type === 'touchend') {
+        return e.touches[0].clientY - canvas.offsetTop;
+      } else {
+        return e.clientY - canvas.offsetTop;
+      }
+    }
+
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('touchstart', startDrawing);
+    canvas.addEventListener('touchmove', draw);
+    canvas.addEventListener('touchend', stopDrawing);
+    document.getElementById('clearCanvas').addEventListener('click', clearCanvas);
+    document.getElementById('downloadCanvas').addEventListener('click', function() {
+      const image = canvas.toDataURL('image/png');
+      const a = document.createElement('a');
+      a.href = image;
+      a.download = 'handwriting.png';
+      a.click();
+    });
+
+    // Accelerometer Data
+    window.addEventListener('devicemotion', function(e) {
+      const acceleration = e.accelerationIncludingGravity;
+      document.getElementById('accelerometerData').innerHTML = `
+        <p>Acceleration X: ${acceleration.x}</p>
+        <p>Acceleration Y: ${acceleration.y}</p>
+        <p>Acceleration Z: ${acceleration.z}</p>
+      `;
+    });
+
+    // Display recording time
+    setInterval(function() {
+      if (recordingStartTime) {
+        const currentTime = new Date();
+        const timeDiff = Math.floor((currentTime - recordingStartTime) / 1000); // Calculate time difference in seconds
+        document.getElementById('recordingTime').textContent = `Recording Time: ${timeDiff} seconds`;
+      }
+    }, 1000);
   </script>
 </body>
 </html>
+
