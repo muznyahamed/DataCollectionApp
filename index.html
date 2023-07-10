@@ -39,6 +39,10 @@
       <h1 class="text-center">Patient Data Collection App</h1>
       <div class="section">
         <h2>Voice Recording</h2>
+        <p>
+          Click "Start" to begin recording your voice. Click "Stop" to stop the
+          recording. You can download the recording as a WAV file.
+        </p>
         <div class="text-center">
           <button type="button" class="btn btn-primary" id="startRecording">
             Start
@@ -65,6 +69,10 @@
       </div>
       <div class="section">
         <h2>Handwriting Spiral</h2>
+        <p>
+          Use your mouse or touch input to draw a spiral on the canvas. Click
+          "Clear" to erase the drawing, and "Download" to save it as an image.
+        </p>
         <div class="text-center">
           <canvas id="handwritingCanvas" width="500" height="500"></canvas>
           <button type="button" class="btn btn-primary mt-2" id="clearCanvas">
@@ -81,6 +89,11 @@
       </div>
       <div class="section">
         <h2>Accelerometer Data</h2>
+        <p>
+          Click "Start Accelerometer Data Recording" to begin recording
+          accelerometer data. Click "Stop Accelerometer Data Recording" to stop
+          the recording. You can download the recorded data as a CSV file.
+        </p>
         <div id="accelerometerData" class="text-center"></div>
         <button
           type="button"
@@ -249,6 +262,7 @@
           window.addEventListener("devicemotion", handleMotion, true);
         }
       }
+
       function handleMotion(e) {
         if (isAccDataRecording) {
           const acceleration = e.accelerationIncludingGravity;
@@ -286,21 +300,6 @@
         link.click();
       }
 
-      window.addEventListener("devicemotion", function (e) {
-        if (isAccDataRecording) {
-          const acceleration = e.accelerationIncludinggravity;
-          const accData = [acceleration.x, acceleration.y, acceleration.z];
-          accDataChunks.push(accData);
-        }
-
-        const acceleration = e.accelerationIncludingGravity;
-        document.getElementById("accelerometerData").innerHTML = `
-        <p>Acceleration X: ${acceleration.x}</p>
-        <p>Acceleration Y: ${acceleration.y}</p>
-        <p>Acceleration Z: ${acceleration.z}</p>
-      `;
-      });
-
       document
         .getElementById("startAccDataRecording")
         .addEventListener("click", startAccDataRecording);
@@ -312,17 +311,167 @@
         .addEventListener("click", downloadAccData);
 
       // Display recording time
-      setInterval(function () {
-        if (recorder && recorder.state === "recording") {
-          const currentTime = new Date();
-          const timeDiff = Math.floor(
-            (currentTime - recorder.startTime) / 1000
-          );
-          document.getElementById(
-            "recordingTime"
-          ).textContent = `Recording Time: ${timeDiff} seconds`;
-        }
-      }, 1000);
+      let recordingInterval;
+
+      function updateRecordingTime() {
+        const currentTime = new Date();
+        const timeDiff = Math.floor((currentTime - recorder.startTime) / 1000);
+        document.getElementById(
+          "recordingTime"
+        ).textContent = `Recording Time: ${timeDiff} seconds`;
+      }
+
+      function startRecordingTime() {
+        recordingInterval = setInterval(updateRecordingTime, 1000);
+      }
+
+      function stopRecordingTime() {
+        clearInterval(recordingInterval);
+      }
+
+      // Voice Recording
+      let recorder;
+
+      function startRecording() {
+        document.getElementById("startRecording").disabled = true;
+        document.getElementById("stopRecording").disabled = false;
+        document.getElementById("downloadRecording").disabled = true;
+
+        navigator.mediaDevices
+          .getUserMedia({ audio: true })
+          .then(function (stream) {
+            recorder = new MediaRecorder(stream);
+            recorder.ondataavailable = function (e) {
+              chunks.push(e.data);
+            };
+            recorder.start();
+            recorder.startTime = new Date();
+            startRecordingTime();
+          })
+          .catch(function (err) {
+            console.log("Error: " + err);
+          });
+      }
+
+      function stopRecording() {
+        document.getElementById("stopRecording").disabled = true;
+        document.getElementById("downloadRecording").disabled = false;
+        recorder.stop();
+        stopRecordingTime();
+      }
+
+      function downloadRecording() {
+        const blob = new Blob(chunks, {
+          type: recorder.mimeType || "audio/wav",
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "recording.wav";
+        a.click();
+
+        chunks = []; // Reset the chunks array for the next recording
+      }
+
+      document
+        .getElementById("startRecording")
+        .addEventListener("click", startRecording);
+      document
+        .getElementById("stopRecording")
+        .addEventListener("click", stopRecording);
+      document
+        .getElementById("downloadRecording")
+        .addEventListener("click", downloadRecording);
+
+      // Handwriting Spiral
+      const canvas = document.getElementById("handwritingCanvas");
+      const ctx = canvas.getContext("2d");
+      let isDrawing = false;
+
+      function startDrawing(e) {
+        isDrawing = true;
+        ctx.beginPath();
+        ctx.moveTo(getX(e), getY(e));
+      }
+
+      function draw(e) {
+        if (!isDrawing) return;
+        ctx.lineTo(getX(e), getY(e));
+        ctx.stroke();
+      }
+
+      function stopDrawing() {
+        isDrawing = false;
+      }
+
+      function clearCanvas() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+
+      function getX(e) {
+        return e.type.includes("touch")
+          ? e.touches[0].clientX - canvas.offsetLeft
+          : e.clientX - canvas.offsetLeft;
+      }
+
+      function getY(e) {
+        return e.type.includes("touch")
+          ? e.touches[0].clientY - canvas.offsetTop
+          : e.clientY - canvas.offsetTop;
+      }
+
+      canvas.addEventListener("mousedown", startDrawing);
+      canvas.addEventListener("mousemove", draw);
+      canvas.addEventListener("mouseup", stopDrawing);
+      canvas.addEventListener("touchstart", startDrawing);
+      canvas.addEventListener("touchmove", draw);
+      canvas.addEventListener("touchend", stopDrawing);
+      document
+        .getElementById("clearCanvas")
+        .addEventListener("click", clearCanvas);
+      document
+        .getElementById("downloadCanvas")
+        .addEventListener("click", function () {
+          const image = canvas.toDataURL("image/png");
+          const a = document.createElement("a");
+          a.href = image;
+          a.download = "handwriting.png";
+          a.click();
+        });
+
+      // Accelerometer Data
+
+      function stopAccDataRecording() {
+        document.getElementById("stopAccDataRecording").disabled = true;
+        document.getElementById("downloadAccData").disabled = false;
+
+        isAccDataRecording = false;
+      }
+
+      function downloadAccData() {
+        let csvContent = "data:text/csv;charset=utf-8,";
+        accDataChunks.forEach(function (rowArray) {
+          let row = rowArray.join(",");
+          csvContent += row + "\r\n";
+        });
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "accelerometer_data.csv");
+        document.body.appendChild(link);
+        link.click();
+      }
+
+      document
+        .getElementById("startAccDataRecording")
+        .addEventListener("click", startAccDataRecording);
+      document
+        .getElementById("stopAccDataRecording")
+        .addEventListener("click", stopAccDataRecording);
+      document
+        .getElementById("downloadAccData")
+        .addEventListener("click", downloadAccData);
     </script>
   </body>
 </html>
