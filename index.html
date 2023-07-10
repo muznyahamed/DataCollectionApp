@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Accelerometer Data 4</title>
+    <title>Accelerometer Data</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -30,15 +30,21 @@
             <p>Z: <span id="accelerometer-z"></span></p>
         </div>
     </div>
+    <button onclick="requestAccelerometerPermission()">Request Permission</button>
 
     <script>
-        function getAccel() {
-          DeviceMotionEvent.requestPermission().then(response => {
-            if (response == 'granted') {
-              console.log("Accelerometer permission granted");
-              startAccelerometerListener();
-            }
-          });
+        function requestAccelerometerPermission() {
+          if (typeof DeviceMotionEvent.requestPermission === 'function') {
+            DeviceMotionEvent.requestPermission().then(response => {
+              if (response == 'granted') {
+                console.log("Accelerometer permission granted");
+                startAccelerometerListener();
+              }
+            });
+          } else {
+            console.log("Accelerometer permission granted");
+            startAccelerometerListener();
+          }
         }
 
         function startAccelerometerListener() {
@@ -54,9 +60,6 @@
             document.getElementById('accelerometer-z').textContent = acceleration.z.toFixed(2);
           }
         }
-
-        // Call the function to request accelerometer permission and start listening to accelerometer data
-        getAccel();
     </script>
 </body>
 </html>
