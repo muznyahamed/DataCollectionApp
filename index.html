@@ -21,6 +21,28 @@
       border: 1px solid #000;
       touch-action: none;
     }
+
+    #visualPlot {
+      margin-top: 20px;
+      width: 100%;
+      height: 100px;
+      border: 1px solid #000;
+      overflow: hidden;
+      position: relative;
+    }
+
+    #visualPlot .bar {
+      position: absolute;
+      bottom: 0;
+      width: 1px;
+      background-color: purple;
+      transition: width 0.1s ease-in-out;
+    }
+
+    #downloadButton {
+      margin-top: 10px;
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -32,54 +54,73 @@
         <button type="button" class="btn btn-primary" id="startRecording">Start</button>
         <button type="button" class="btn btn-danger" id="stopRecording" disabled>Stop</button>
       </div>
-      <div id="recordingVisual" class="text-center mt-2"></div>
+      <div id="visualPlot"></div>
+      <a href="#" id="downloadButton" class="btn btn-success btn-block" download>Download Voice Note</a>
     </div>
     <div class="section">
       <h2>Handwriting Spiral</h2>
       <div class="text-center">
         <canvas id="handwritingCanvas"></canvas>
         <button type="button" class="btn btn-primary mt-2" id="clearCanvas">Clear</button>
+        <button type="button" class="btn btn-success mt-2" id="downloadCanvas">Download</button>
       </div>
     </div>
     <div class="section">
       <h2>Accelerometer Data</h2>
-      <table id="accelerometerTable" class="table">
-        <thead>
-          <tr>
-            <th scope="col">Timestamp</th>
-            <th scope="col">Acceleration X</th>
-            <th scope="col">Acceleration Y</th>
-            <th scope="col">Acceleration Z</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-    <div class="text-center">
-      <button type="button" class="btn btn-success" id="submitData">Submit Data</button>
+      <div id="accelerometerData" class="text-center"></div>
     </div>
   </div>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/wavesurfer.js/4.0.1/wavesurfer.min.js"></script>
   <script>
     // Voice Recording
     let recorder;
-    let chunks = [];
-    let recordingVisualInterval;
+    const visualPlot = document.getElementById('visualPlot');
+    const downloadButton = document.getElementById('downloadButton');
+    const sampleRate = 100; // milliseconds
+    const recordingDuration = 30000; // 30 seconds
 
     function startRecording() {
+      document.getElementById('startRecording').disabled = true;
+      document.getElementById('stopRecording').disabled = false;
+
+      visualPlot.innerHTML = '';
+      downloadButton.style.display = 'none';
+
+      const barWidth = Math.floor(visualPlot.clientWidth / (recordingDuration / sampleRate));
+      let width = visualPlot.clientWidth;
+      let startTime = Date.now();
+      const visualizerInterval = setInterval(function() {
+        const elapsedTime = Date.now() - startTime;
+        const bar = document.createElement('div');
+        bar.className = 'bar';
+        bar.style.width = barWidth + 'px';
+        visualPlot.appendChild(bar);
+        width -= barWidth;
+        visualPlot.scrollLeft = width;
+        if (elapsedTime >= recordingDuration) {
+          clearInterval(visualizerInterval);
+          document.getElementById('startRecording').disabled = false;
+          document.getElementById('stopRecording').disabled = true;
+          stopRecording();
+        }
+      }, sampleRate);
+
       navigator.mediaDevices.getUserMedia({ audio: true })
         .then(function(stream) {
           recorder = new MediaRecorder(stream);
+          const chunks = [];
           recorder.ondataavailable = function(e) {
             chunks.push(e.data);
           };
+          recorder.onstop = function() {
+            const blob = new Blob(chunks, { type: 'audio/wav' });
+            const url = URL.createObjectURL(blob);
+            downloadButton.href = url;
+            downloadButton.style.display = 'block';
+            stream.getTracks().forEach(track => track.stop());
+          };
           recorder.start();
-          document.getElementById('startRecording').disabled = true;
-          document.getElementById('stopRecording').disabled = false;
-          document.getElementById('recordingVisual').textContent = 'Recording in progress...';
-          recordingVisualInterval = setInterval(function() {
-            document.getElementById('recordingVisual').textContent += '.';
-          }, 1000);
         })
         .catch(function(err) {
           console.log('Error: ' + err);
@@ -88,10 +129,6 @@
 
     function stopRecording() {
       recorder.stop();
-      document.getElementById('startRecording').disabled = false;
-      document.getElementById('stopRecording').disabled = true;
-      clearInterval(recordingVisualInterval);
-      document.getElementById('recordingVisual').textContent = '';
     }
 
     document.getElementById('startRecording').addEventListener('click', startRecording);
@@ -145,6 +182,13 @@
     canvas.addEventListener('touchmove', draw);
     canvas.addEventListener('touchend', stopDrawing);
     document.getElementById('clearCanvas').addEventListener('click', clearCanvas);
+    document.getElementById('downloadCanvas').addEventListener('click', function() {
+      const image = canvas.toDataURL('image/png');
+      const a = document.createElement('a');
+      a.href = image;
+      a.download = 'handwriting.png';
+      a.click();
+    });
 
     // Accelerometer Data
     const accelerometerData = [];
@@ -158,31 +202,14 @@
         accelerationY: acceleration.y,
         accelerationZ: acceleration.z
       });
-      document.getElementById('accelerometerTable').getElementsByTagName('tbody')[0].innerHTML += `
-        <tr>
-          <td>${timestamp}</td>
-          <td>${acceleration.x}</td>
-          <td>${acceleration.y}</td>
-          <td>${acceleration.z}</td>
-        </tr>
+      document.getElementById('accelerometerData').innerHTML = `
+        <p>Acceleration X: ${acceleration.x}</p>
+        <p>Acceleration Y: ${acceleration.y}</p>
+        <p>Acceleration Z: ${acceleration.z}</p>
       `;
     }
 
-    function exportData() {
-      const name = document.getElementById('name').value;
-      const voiceBlob = new Blob(chunks, { type: 'audio/mpeg' });
-      const handwritingDataURL = canvas.toDataURL('image/png');
-      const accelerometerCSV = accelerometerData.map(row => Object.values(row).join(',')).join('\n');
-
-      // TODO: Implement sending data to server or cloud storage
-      console.log('Name:', name);
-      console.log('Voice Blob:', voiceBlob);
-      console.log('Handwriting Data URL:', handwritingDataURL);
-      console.log('Accelerometer CSV:', accelerometerCSV);
-    }
-
     window.addEventListener('devicemotion', handleAccelerometerData);
-    document.getElementById('submitData').addEventListener('click', exportData);
   </script>
 </body>
 </html>
