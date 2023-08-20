@@ -63,6 +63,9 @@
           >
             Download WAV
           </button>
+          <button type="button" class="btn btn-success mt-2" id="uploadwav">
+            upload
+          </button>
         </div>
         <div id="waveform"></div>
         <p id="recordingTime"></p>
@@ -85,6 +88,9 @@
             id="downloadCanvas"
           >
             Download
+          </button>
+          <button type="button" class="btn btn-success mt-2" id="uploadcanvas">
+            upload
           </button>
         </div>
       </div>
@@ -120,6 +126,10 @@
           disabled
         >
           Download Accelerometer Data CSV
+        </button>
+        upload
+        <button type="button" class="btn btn-success mt-2" id="uploadcsv">
+          upload
         </button>
       </div>
     </div>
@@ -184,6 +194,37 @@
       document
         .getElementById("downloadRecording")
         .addEventListener("click", downloadRecording);
+      document
+        .getElementById("uploadwav")
+        .addEventListener("click", async () => {
+          if (chunks.length === 0) {
+            alert("No audio recorded.");
+            return;
+          }
+
+          const audioBlob = new Blob(chunks, { type: "audio/mp3" });
+          const formData = new FormData();
+          formData.append("file", audioBlob, "recording.mp3");
+
+          try {
+            const response = await fetch(
+              "https://parkison-data-collection.glitch.me/upload",
+              {
+                method: "POST",
+                body: formData,
+              }
+            );
+
+            const data = await response.json();
+            if (data.success) {
+              alert("Recording uploaded successfully.");
+            } else {
+              alert(data.message);
+            }
+          } catch (error) {
+            console.error("Error uploading recording:", error);
+          }
+        });
 
       // Handwriting Spiral
       const canvas = document.getElementById("handwritingCanvas");
@@ -240,6 +281,60 @@
           a.download = "handwriting.png";
           a.click();
         });
+
+      function dataURItoBlob(dataURI) {
+        const byteString = atob(dataURI.split(",")[1]);
+        const mimeString = dataURI.split(",")[0].split(":")[1].split(";")[0];
+        const arrayBuffer = new ArrayBuffer(byteString.length);
+        const uint8Array = new Uint8Array(arrayBuffer);
+
+        for (let i = 0; i < byteString.length; i++) {
+          uint8Array[i] = byteString.charCodeAt(i);
+        }
+
+        return new Blob([arrayBuffer], { type: mimeString });
+      }
+      document
+        .getElementById("uploadcanvas")
+        .addEventListener("click", async () => {
+          const imageData = canvas.toDataURL("image/png");
+          const blob = dataURItoBlob(imageData);
+
+          const formData = new FormData();
+          formData.append("file", blob, "handwriting.png");
+
+          try {
+            const response = await fetch(
+              "https://parkison-data-collection.glitch.me/upload",
+              {
+                method: "POST",
+                body: formData,
+              }
+            );
+
+            const data = await response.json();
+            if (data.success) {
+              alert("Handwriting image uploaded successfully.");
+            } else {
+              alert(data.message);
+            }
+          } catch (error) {
+            console.error("Error uploading handwriting image:", error);
+          }
+        });
+
+      function dataURItoBlob(dataURI) {
+        const byteString = atob(dataURI.split(",")[1]);
+        const mimeString = dataURI.split(",")[0].split(":")[1].split(";")[0];
+        const arrayBuffer = new ArrayBuffer(byteString.length);
+        const uint8Array = new Uint8Array(arrayBuffer);
+
+        for (let i = 0; i < byteString.length; i++) {
+          uint8Array[i] = byteString.charCodeAt(i);
+        }
+
+        return new Blob([arrayBuffer], { type: mimeString });
+      }
 
       // Accelerometer Data
       let accDataChunks = [];
@@ -329,6 +424,41 @@
           }
         }, 1000);
       }
+      document
+        .getElementById("uploadcsv")
+        .addEventListener("click", async () => {
+          if (accDataChunks.length === 0) {
+            alert("No accelerometer data recorded.");
+            return;
+          }
+
+          const csvContent = accDataChunks
+            .map((rowArray) => rowArray.join(","))
+            .join("\n");
+          const blob = new Blob([csvContent], { type: "text/csv" });
+
+          const formData = new FormData();
+          formData.append("file", blob, "accelerometer_data.csv");
+
+          try {
+            const response = await fetch(
+              "https://parkison-data-collection.glitch.me/upload",
+              {
+                method: "POST",
+                body: formData,
+              }
+            );
+
+            const data = await response.json();
+            if (data.success) {
+              alert("CSV data uploaded successfully.");
+            } else {
+              alert(data.message);
+            }
+          } catch (error) {
+            console.error("Error uploading CSV data:", error);
+          }
+        });
 
       function stopRecordingTime() {
         clearInterval(recordingInterval);
