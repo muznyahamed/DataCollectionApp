@@ -9,12 +9,13 @@
     <style>
       body {
         padding: 20px;
+      background-image: url('image.jpg'); /* Replace with your background image URL */
+      background-size: cover; /* Adjust to your preference */
+      background-repeat: no-repeat; /* Prevent image from repeating */
+
       }
 
-      .container {
-        max-width: 100%;
-        margin: 0 auto;
-      }
+      
 
       .section {
         margin-bottom: 20px;
@@ -35,9 +36,9 @@
     </style>
   </head>
   <body>
-    <div class="container">
+    <div class="container card  mt-5">
       <h1 class="text-center">Patient Data Collection App</h1>
-      <div class="section">
+      <div class="section  mt-5">
         <h2>Voice Recording</h2>
         <p>
           Click the "Start" button to begin voice recording. Speak clearly into
@@ -70,7 +71,7 @@
         <div id="waveform"></div>
         <p id="recordingTime"></p>
       </div>
-      <div class="section">
+      <div class="section  mt-5">
         <h2>Handwriting Spiral</h2>
         <p>
           Use your finger or a stylus on the canvas to draw a spiral. Click the
@@ -94,7 +95,7 @@
           </button>
         </div>
       </div>
-      <div class="section">
+      <div class="section mt-5">
         <h2>Accelerometer Data</h2>
         <p>
           Click the "Start Accelerometer Data Recording" button to begin
